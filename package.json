@@ -4,7 +4,7 @@
   "description": "A simple API for my college project",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -17,7 +17,17 @@
   },
   "homepage": "https://github.com/Mattstacey321/AGM#readme",
   "dependencies": {
+    "apollo-cache-inmemory": "^1.6.5",
+    "apollo-client": "^2.6.8",
     "apollo-server": "^2.9.14",
-    "graphql": "^14.5.8"
+    "cloudinary": "^1.18.1",
+    "dot-env": "0.0.1",
+    "dotenv": "^8.2.0",
+    "google-auth-library": "^5.7.0",
+    "graphql": "^14.5.8",
+    "graphql-upload": "^9.0.0",
+    "mongoose": "^5.8.2",
+    "nodemon": "^2.0.2",
+    "promises-all": "^1.0.0"
   }
 }
