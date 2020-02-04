@@ -9,21 +9,21 @@ const typeDefs = gql`
     type Query{
         test:[ResultTest]
         allMessage:[ListMessage]
-        allRoom:[Room]
-        allUser:[User]
+        getAllRoom:[Room]
+        getAllUser:[User]
         allGlobalRoom(qty:Int,name:String):[GlobalMessage]
         RmvMbFrRoom(type:String!,idUser:String,idRoom:String):Result
         EditRoom(idRoom:ID!,newData:RoomInput):Result
         ChangeHost(oldHost:String!,newHost:String!):[Room]
         getRoomByUser(idUser:String,name:String):[Room]
-        allRoomChat:[RoomChat]
+        getAllRoomChat:[RoomChat]
         getRoomJoin(UserID:String):[Room]
         onJoinRoomChat(id_room:String,id_user:String):JoinRoomResult
         addMember(id_room:String!,id_user:String!):Result
         onChatGroup(id_room:String!,chat_message:MessageInput):Result
         getAllMessage(id_room:String!):RoomChat
         findRoomByName(room_name:String!):[Room]
-        getListGame(limit:Int):[Game]
+        getListGame(limit:Int!):[Game]
      
     }
     type File {
@@ -130,6 +130,46 @@ const typeDefs = gql`
             Message
         ]
     }
+    type PrivateMessage{
+        id_user:String
+        pendingMessage:[
+            pendingMessages
+        ]
+        incommingMessage:[
+            incommingMessages
+        ]
+
+    }
+    type pendingMessages{
+        id_user:String
+        message:[String]
+        time:String
+    }
+    type incommingMessages{
+        id_friend:String
+        message:[String]
+        time:String
+    }
+
+    input message{
+        id_user:String
+        pendingMessage:[
+            pendingMessage
+        ]
+        incommingMessage:[
+            privateMessage
+        ]
+    }
+    input pendingMessage{
+        id_user:String,
+        messages:[String],
+        time:String
+    }
+    input privateMessage{
+        id_friend:String
+        message:[String]
+        time:String
+    }
     input newMessage{
         username:String!
         listmessage:[
@@ -196,6 +236,7 @@ const typeDefs = gql`
         createUser(input:UserInput):User
         onChatGlobal(which_game:String!,input: MessageGlobalInput):GlobalMessage
         onChat(input:newMessage):ListMessage
+        onChatPrivate(id_user:String,id_friend:String,input:message):PrivateMessage
         onChatUpdate(name:String!,input:MessageInput):ListMessage
         onJoinRoom(id_room:String!,id_user:String):JoinRoomResponse
         createChatGlobal(input:MessageGlobalInput ):GlobalMessage

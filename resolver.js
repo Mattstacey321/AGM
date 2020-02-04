@@ -5,6 +5,7 @@ const User = require('./models/user')
 const GlobalRoom = require('./models/global_room');
 const RoomChat = require('./models/chat_room')
 const ListGame = require('./models/list_game');
+const ChatPrivate = require('./models/chat_private');
 const { GraphQLUpload } = require('graphql-upload');
 
 const fs = require('fs')
@@ -40,7 +41,7 @@ module.exports = resolvers = {
     },
     Query: {
 
-
+        
         test: async () => {
             
 
@@ -49,11 +50,14 @@ module.exports = resolvers = {
             return await Message.find();
         },
 
-        async allRoom() {
+        async getAllRoom() {
             return await Room.find();
         },
-        async allRoomChat() {
+        async getAllRoomChat() {
             return await RoomChat.find();
+        },
+        async getAllUser(){
+            return User.find();
         },
         async allGlobalRoom(root, { qty, name }) {
 
@@ -316,6 +320,17 @@ module.exports = resolvers = {
             GlobalRoom.findOneAndUpdate({ room_name: name }, { $push: { message: input } }, { upsert: true, rawResult: true }, (err, doc) => {
                 console.log(doc.ok);
             })
+        },
+        // id_user: id from host message, id_friends
+        async onChatPrivate(root,{id_user,id_friend,input}){
+            //default 2 id is a friends ...
+
+            return ChatPrivate.create(input).then(async (value)=>{
+               // console.log(value._id);
+                return await ChatPrivate.findByIdAndUpdate(value._id, {$set:{  "id_user": id_user,"incommingMessage.$[].id_friend": id_friend }}, { upsert: true, 'new': true });  
+               
+            })
+           
         },
         async createChatGlobal(root, { input }) {
             return await GlobalRoom.create(input);
