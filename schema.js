@@ -24,6 +24,8 @@ const typeDefs = gql`
         getAllMessage(id_room:String!):RoomChat
         findRoomByName(room_name:String!):[Room]
         getListGame(limit:Int!):[Game]
+        getRandomGame:[Game]
+        getGameByGenre(type:String!):[Game]
      
     }
     type File {
@@ -48,7 +50,7 @@ const typeDefs = gql`
         platforms:[String]
         popularity:String
         logo:String
-        image:[String]
+        image(limit:Int):[String]
     }
     type User{
         _id:ID!
@@ -250,7 +252,7 @@ const typeDefs = gql`
 const schema = makeExecutableSchema({
     typeDefs: typeDefs,
     resolvers:
-        Resolvers  
-
+        Resolvers,
+    
 });
 module.exports = schema;

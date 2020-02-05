@@ -13,8 +13,15 @@ const server = new ApolloServer({
   
     cors:true,
     schema: Schema,
-    playground: true,
-    introspection: true
+    playground: false,
+    introspection: true,
+    context:({req})=>{
+       const token =req.headers.token || null;
+       console.log(token);
+      return {token};
+
+    }
+    
 });
 server.listen().then(({ url }) => {
    

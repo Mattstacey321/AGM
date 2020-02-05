@@ -7,7 +7,7 @@ const RoomChat = require('./models/chat_room')
 const ListGame = require('./models/list_game');
 const ChatPrivate = require('./models/chat_private');
 const { GraphQLUpload } = require('graphql-upload');
-
+const _= require('lodash');
 const fs = require('fs')
 require('dotenv').config();
 const path = require('path');
@@ -200,11 +200,25 @@ module.exports = resolvers = {
             }
             if (limit == 0) {
                 return await ListGame.find({}, {}, { slice: { 'image': [1, 100] } }).then((f) => {
-                    //console.log(f);
+                    //console.log(f._doc);
                     return f;
                 });
             }
 
+        },
+        getRandomGame: async(root)=>{
+            return await ListGame.find({}, {}, { slice: { 'image': 1 } }).then((f) => {
+                var listImage= [];
+                console.log(f )
+                return f;
+            });
+        },
+        getGameByGenre: (root, {type},context) =>{
+            console.log("TOken here",context.token);
+            return ListGame.find({"genres":{ $regex: type, $options: 'i' }}).then((v)=>{
+                //console.log(v);
+                return v;
+            })
         }
     },
     Mutation: {
