@@ -6,6 +6,7 @@ const list_game= mongoose.Schema({
     platforms:[String],
     tag:[String],
     logo:String,
-    image:[String]
+    image:[String],
+    cover_image:String
 })
 module.exports = mongoose.model("ListGame",list_game);

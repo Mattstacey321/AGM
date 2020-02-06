@@ -51,6 +51,7 @@ const typeDefs = gql`
         popularity:String
         logo:String
         image(limit:Int):[String]
+        cover_image:String
     }
     type User{
         _id:ID!

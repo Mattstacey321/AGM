@@ -213,7 +213,7 @@ module.exports = resolvers = {
                 return f;
             });
         },
-        getGameByGenre: (root, {type},context) =>{
+        getGameByGenre: async (root, {type},context) =>{
             console.log("TOken here",context.token);
             return ListGame.find({"genres":{ $regex: type, $options: 'i' }}).then((v)=>{
                 //console.log(v);
