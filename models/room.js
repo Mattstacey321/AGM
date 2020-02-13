@@ -10,11 +10,17 @@ const Room = mongoose.Schema({
     name: String
   },
   description: String,
-  maxOfMember: Number,
+  maxOfMember: {
+    type:Number,
+    default:1
+  },
   hostID: String,
   member: [String],
-  blacklist: [String]
-
+  blacklist: [String],
+  createAt:{
+    type:Date,
+    default:Date.now()
+  }
 })
 
 module.exports = mongoose.model('roomList', Room);
