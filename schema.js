@@ -12,15 +12,13 @@ const typeDefs = gql`
         test:[ResultTest]
         allMessage:[ListMessage]
         getAllRoom:[Room]
-        getAllUser:[User]
-        GlobalRoom(qty:Int,name:String):[GlobalMessage]
         RmvMbFrRoom(type:String!,idUser:String,idRoom:String):Result
         editRoom(idRoom:ID!,newData:RoomInput):Result
         changeHost(oldHost:String!,newHost:String!):[Room]
         getRoomByUser(idUser:String,name:String):[Room]
         getAllRoomChat:[RoomChat]
         getRoomJoin(UserID:String):[Room]
-        joinRoomChat(roomID:String,userID:String,Info:Info):JoinRoomResult
+        joinRoomChat(roomID:String,userID:String,Info:Info):ResultCRUD
         addMember(id_room:String!,id_user:String!):Result
         chatGroup(id_room:String!,chat_message:MessageInput):Result
         getAllMessage(id_room:String!):RoomChat
@@ -32,6 +30,10 @@ const typeDefs = gql`
         approveList_User(userID:String!):[ApproveList]
        
         
+    }
+    type gameInfo{
+        gameID:String!
+        gameName:String!
     }
     input Info{
         userID:String!,
@@ -60,10 +62,7 @@ const typeDefs = gql`
         createAt:Date
         status:String!
     }
-    type gameInfo{
-        gameID:String!
-        gameName:String!
-    }
+  
     type Game{
         _id:ID!
         game_name:String
@@ -74,37 +73,20 @@ const typeDefs = gql`
         image(limit:Int):[String]
         cover_image:String
     }
-    type User{
-        _id:ID!
-        username:String!
-        avatar:String!
-        isHost:Boolean
-    }
-
     type Message{
         _id:ID
-        id_user:String
+        userID:String
         text:String
-        image:String
         datetime:String
     }
     type ListMessage{
-        username:String!
+        userID:String!
         listmessage:[Message]
     }
-    type MessageGlobal{
-        username:User
-        message:Message
-    }
-    type GlobalMessage{
-        room_name:String
-        message:[    
-            MessageGlobal
-        ]
-    }
+  
     
     type JoinRoomResponse implements MutationResponse{
-        code: String!
+        status:String
         success: Boolean!
         message: String!
     
@@ -115,11 +97,8 @@ const typeDefs = gql`
         message: String!
         image_url:String
     }
-    type Upload1{
-        image_url:String
-    }
+    
     interface MutationResponse {
-        code: String!
         success: Boolean!
         message: String!
     }
@@ -129,29 +108,18 @@ const typeDefs = gql`
     
     type Result{
       data:Room
-      
       status:String
       result:Boolean
     }
-    type ResultCRUD{
-        statusCode:String
-        result:String
-    }
-
-
-    type CreateResult{
-            id_room:String
-            result:Boolean
-    }
-    
-    type JoinRoomResult{
-        message:String
+    type ResultCRUD implements MutationResponse{
         status:String
-        result:Boolean
+        success:Boolean!
+        message:String!
     }
+  
     type RoomChat{
         _id:ID!
-        id_room:String
+        roomID:String
         member:[String]
         messages:[
             Message
@@ -204,7 +172,6 @@ const typeDefs = gql`
         ]
     }
     input RoomInput{
-        
         roomName:String!
         isPrivate:Boolean!
         hostID:String!
@@ -213,40 +180,26 @@ const typeDefs = gql`
         maxMember:Int!
         game:GameInfo
     }
+   
     input GameInfo{
         id:String!
         name:String!
     }
-    input UserInput{
-        _id:ID
-        username:String!
-        avatar:String!
-        isHost:Boolean
-    }
+   
     input MessageInput{
-        IDUser:String
+        userID:String
         text:String
-        datetime:String
+        createAt:String
     }
-    input MessageGlobalInput1{
-        username:UserInput
-        message:String
-    }
-    input MessageGlobalInput{
-        room_name:String
-        message:[
-            MessageGlobalInput1
-        ]
-    }
+  
     input RoomChatInput{
-        
-        id_room:String
         member:[
-            UserInput
+            String
         ]
         messages:[
             MessageInput
         ]
+        createAt:Date
     }
     input GameInput{
         _id:ID
@@ -262,29 +215,20 @@ const typeDefs = gql`
     type Mutation{
         createGame(input:GameInput):Game
         createRoomChat(input:RoomChatInput):RoomChat
-        createRoom(userID:String,roomInput: RoomInput):CreateResult
-        removeRoom(idRoom:ID!,userID:String!):ResultCRUD
-        
-        createUser(input:UserInput):User
-        chatGlobal(which_game:String!,input: MessageGlobalInput):GlobalMessage
-        chat(input:newMessage):ListMessage
+        createRoom(userID:String,roomInput: RoomInput,roomChatInput:RoomChatInput):ResultCRUD
+        removeRoom(roomID:ID!,userID:String!):ResultCRUD
         chatPrivate(id_user:String,id_friend:String,input:message):PrivateMessage
         chatUpdate(name:String!,input:MessageInput):ListMessage
-        joinRoom(roomID:String!,currentUserID:String!,info:Info!):JoinRoomResult
-        createChatGlobal(input:MessageGlobalInput ):GlobalMessage
+        joinRoom(roomID:String!,currentUserID:String!,info:Info!):ResultCRUD
         upload(file: Upload!,userID:String,type:Int):UploadImage
-        
-       
     }
 `;
 
 
 const schema = makeExecutableSchema({
-
     typeDefs: typeDefs,
     resolvers:
         Resolvers,
-    
     
 });
 module.exports = schema;
