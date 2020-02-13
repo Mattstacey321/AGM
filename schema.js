@@ -6,6 +6,7 @@ const typeDefs = gql`
     
     union ResultTest= Room|Game  
     scalar Upload
+    scalar Date
     type Query{
         generateToken(id:String!):String
         test:[ResultTest]
@@ -56,6 +57,7 @@ const typeDefs = gql`
         game:gameInfo
         member:[String]
         maxOfMember:Int
+        createAt:Date
         status:String!
     }
     type gameInfo{
@@ -282,6 +284,7 @@ const schema = makeExecutableSchema({
     typeDefs: typeDefs,
     resolvers:
         Resolvers,
+    
     
 });
 module.exports = schema;

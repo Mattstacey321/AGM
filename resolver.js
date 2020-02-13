@@ -8,6 +8,7 @@ const ListGame = require('./models/list_game');
 const ChatPrivate = require('./models/chat_private');
 const ApporoveList= require('./models/approve_list');
 const { GraphQLUpload } = require('graphql-upload');
+const Date = require('./custom-scalar/Date.scalar');
 const _ = require('lodash');
 const fs = require('fs')
 require('dotenv').config();
@@ -18,6 +19,7 @@ var cloudinary = require('cloudinary').v2;
 var promisesAll = require('promises-all');
 module.exports = resolvers = {
     Upload: GraphQLUpload,
+    Date: Date,
     MutationResponse: {
         __resolveType(mutationResponse, context, info) {
             return null;
@@ -67,11 +69,12 @@ module.exports = resolvers = {
         },
 
         async getAllRoom(_, { }, { token }) {
-            if (!token) {
-                console.log("No access token provided !")
-                throw new AuthenticationError("No access token provided !")
-            }
-            else return Room.find();
+            // if (!token) {
+            //     console.log("No access token provided !")
+            //     throw new AuthenticationError("No access token provided !")
+            // }
+            // else 
+            return Room.find();
         },
         async getAllRoomChat() {
             return await RoomChat.find();
