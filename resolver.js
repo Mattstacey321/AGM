@@ -305,8 +305,8 @@ module.exports = resolvers = {
                                     "hostID": userID,
                                     "maxOfMember": roomInput.maxMember,
                                     "game": {
-                                        "id": roomInput.game.id,
-                                        "name": roomInput.game.name
+                                        "gameID": roomInput.game.id,
+                                        "gameName": roomInput.game.name
                                     },
                                     "isPrivate": roomInput.isPrivate,
                                     "description": roomInput.description

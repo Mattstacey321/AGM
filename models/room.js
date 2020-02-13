@@ -6,8 +6,8 @@ const Room = mongoose.Schema({
     default: false
   },
   game: {
-    id: String,
-    name: String
+    gameID: String,
+    gameName: String
   },
   description: String,
   maxOfMember: {

@@ -59,7 +59,7 @@ const typeDefs = gql`
         status:String!
     }
     type gameInfo{
-        idGame:String!
+        gameID:String!
         gameName:String!
     }
     type Game{
