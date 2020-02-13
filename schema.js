@@ -1,12 +1,13 @@
-const { gql } = require('apollo-server');
+const { gql,AuthenticationError } = require('apollo-server');
 const { makeExecutableSchema } = require('apollo-server-express');
 const Resolvers = require('./resolver');
 
 const typeDefs = gql`
     
-    union ResultTest=  Room | Game  
+    union ResultTest= Room|Game  
     scalar Upload
     type Query{
+        generateToken(id:String!):String
         test:[ResultTest]
         allMessage:[ListMessage]
         getAllRoom:[Room]
@@ -26,22 +27,33 @@ const typeDefs = gql`
         getListGame(limit:Int!):[Game]
         getRandomGame:[Game]
         getGameByGenre(type:String!):[Game]
-     
+       
+        
     }
     type File {
         filename: String!
         mimetype: String!
         encoding: String!
       }
-   
-    type Room{
+    type ApproveList{
+        userID:String
+        roomID:String
+        isApprove:Boolean
+    }
+    type Room implements AuthResponse{
         _id:ID!
-        room_name:String!
-        id_user:String
+        roomName:String!
+        idUser:String!
         isPrivate:Boolean
-        password:String
         description:String
+        game:gameInfo
         member:[String]
+        maxOfMember:Int
+        status:String!
+    }
+    type gameInfo{
+        idGame:String!
+        gameName:String!
     }
     type Game{
         _id:ID!
@@ -102,6 +114,9 @@ const typeDefs = gql`
         success: Boolean!
         message: String!
     }
+    interface AuthResponse{
+        status:String!
+    }
     
     type Result{
       data:Room
@@ -153,7 +168,7 @@ const typeDefs = gql`
         message:[String]
         time:String
     }
-
+    
     input message{
         id_user:String
         pendingMessage:[
@@ -180,14 +195,18 @@ const typeDefs = gql`
         ]
     }
     input RoomInput{
-        _id:ID
-        room_name:String!
-        isPrivate:Boolean
-        id_user:String
-        password:String
-        description:String
-        member:[String]
         
+        roomName:String!
+        isPrivate:Boolean!
+        idUser:String!
+        description:String
+        member:[String]!
+        maxMember:Int!
+        game:GameInfo
+    }
+    input GameInfo{
+        id:String!
+        name:String!
     }
     input UserInput{
         _id:ID
@@ -233,9 +252,10 @@ const typeDefs = gql`
     type Mutation{
         createGame(input:GameInput):Game
         createRoomChat(input:RoomChatInput):RoomChat
-        createRoom(userID:String,chatInput:RoomChatInput,roomInput: RoomInput):CreateResult
-        RemoveRoom(id:ID!):ResultCRUD
-        
+        createRoom(userID:String,roomInput: RoomInput):CreateResult
+        RemoveRoom(idRoom:ID!,userID:String!):ResultCRUD
+        approveList_Host(hostID:String!):[ApproveList]
+        approveList_User(userID:String!):[ApproveList]
         createUser(input:UserInput):User
         onChatGlobal(which_game:String!,input: MessageGlobalInput):GlobalMessage
         onChat(input:newMessage):ListMessage

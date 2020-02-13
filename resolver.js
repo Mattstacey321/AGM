@@ -6,14 +6,16 @@ const GlobalRoom = require('./models/global_room');
 const RoomChat = require('./models/chat_room')
 const ListGame = require('./models/list_game');
 const ChatPrivate = require('./models/chat_private');
+const ApporoveList= require('./models/approve_list');
 const { GraphQLUpload } = require('graphql-upload');
-const _= require('lodash');
+const _ = require('lodash');
 const fs = require('fs')
 require('dotenv').config();
 const path = require('path');
-
+const { AuthenticationError } = require('apollo-server')
+const { sign,verify } = require('jsonwebtoken');
 var cloudinary = require('cloudinary').v2;
-var promisesAll = require ('promises-all');
+var promisesAll = require('promises-all');
 module.exports = resolvers = {
     Upload: GraphQLUpload,
     MutationResponse: {
@@ -21,18 +23,24 @@ module.exports = resolvers = {
             return null;
         },
     },
-    
+    AuthResponse: {
+        __resolveType(AuthResponse, context, info) {
+            return null;
+        },
+    },
+
     ResultTest: {
+
         __resolveType(obj, context, info) {
 
             if (obj.room_name) {
                 console.log(obj);
-                return Room.find().then((V) => {
+                return Room.find().then((v) => {
                     return v;
                 });
             }
             if (obj.game_name) {
-                return ListGame.find().then((V) => {
+                return ListGame.find().then((v) => {
                     return v;
                 });
             }
@@ -41,22 +49,34 @@ module.exports = resolvers = {
     },
     Query: {
 
-        
         test: async () => {
-            
+            return Room.find();
 
         },
-        allMessage: async () => {
+        generateToken: async (_, { id }) => {
+            var token = sign({
+                id_user: id,
+                role: "User"
+            }, process.env.SECRET_KEY, { expiresIn: "7d" });
+            return token;
+        },
+
+        allMessage: async (_, { }, { token }) => {
+
             return await Message.find();
         },
 
-        async getAllRoom() {
-            return await Room.find();
+        async getAllRoom(_, { }, { token }) {
+            if (!token) {
+                console.log("No access token provided !")
+                throw new AuthenticationError("No access token provided !")
+            }
+            else return Room.find();
         },
         async getAllRoomChat() {
             return await RoomChat.find();
         },
-        async getAllUser(){
+        async getAllUser() {
             return User.find();
         },
         async allGlobalRoom(root, { qty, name }) {
@@ -95,18 +115,29 @@ module.exports = resolvers = {
 
         },
         async EditRoom(root, { idRoom, newData }) {
-            return Room.findOneAndUpdate({ "_id": idRoom }, { $set: { "room_name": newData.room_name, "isPrivate": newData.isPrivate, "password": newData.password, "description": newData.description } }, { upsert: true, 'new': true }).then(res => {
-                return { "data": res, "result": true }
-            }).catch(err => {
-                return { err, "result": false }
-            })
+            return Room.findOneAndUpdate(
+                { "_id": idRoom },
+                {
+                    $set: {
+                        "room_name": newData.room_name,
+                        "isPrivate": newData.isPrivate,
+
+                        "description": newData.description
+                    }
+                },
+                { upsert: true, 'new': true }).then(res => {
+                    return { "data": res, "result": true }
+                }).catch(err => {
+                    return { err, "result": false }
+                })
         },
         async ChangeHost(root, { oldHost, newHost }) {
 
 
         },
         async findRoomByName(root, { room_name }) {
-            return Room.find({ "room_name": { '$regex': room_name, $options: 'i' } });
+
+            return Room.find({ "roomName": { '$regex': room_name, $options: 'i' } });
         },
         async getRoomByUser(root, { idUser, name }) {
             return Room.aggregate([{ $match: { "host_name.username": name } }], (err, res) => {
@@ -171,7 +202,7 @@ module.exports = resolvers = {
             })
 
         },
-
+        //them tin nhan vao group chat 
         async onChatGroup(root, { id_room, chat_message }) {
 
             return RoomChat.findOneAndUpdate({ "id_room": id_room }, { $push: { messages: chat_message } }).then(v => {
@@ -183,6 +214,7 @@ module.exports = resolvers = {
                 return {"data":result,"result":true}
             }).catch(err=>{return {"data":err,"result":false}});*/
         },
+        // lay tat ca tin nhan trog mot phong dua vao id_room
         async getAllMessage(root, { id_room, sl }) {
 
             return RoomChat.findOne({ "id_room": id_room }).then(result => {
@@ -206,16 +238,16 @@ module.exports = resolvers = {
             }
 
         },
-        getRandomGame: async(root)=>{
+        getRandomGame: async (root) => {
             return await ListGame.find({}, {}, { slice: { 'image': 1 } }).then((f) => {
-                var listImage= [];
-                console.log(f )
+                var listImage = [];
+                console.log(f)
                 return f;
             });
         },
-        getGameByGenre: async (root, {type},context) =>{
-            console.log("TOken here",context.token);
-            return ListGame.find({"genres":{ $regex: type, $options: 'i' }}).then((v)=>{
+        getGameByGenre: async (root, { type }, context) => {
+            console.log("TOken here", context.token);
+            return ListGame.find({ "genres": { $regex: type, $options: 'i' } }).then((v) => {
                 //console.log(v);
                 return v;
             })
@@ -232,11 +264,7 @@ module.exports = resolvers = {
                  await Room.findOneAndUpdate({"room_name":input.room_name},{$push:{"member":res}},{upsert:true});
              });
          },*/
-        /*async uploadImage(root, { name, file }) {
-            const { filename, mimetype, createReadStream } = file;
-            const stream = createReadStream();
-            console.log(file);
-        },*/
+        
         async createGame(root, { input }) {
             return ListGame.create(input).then((value) => {
                 return value;
@@ -246,9 +274,7 @@ module.exports = resolvers = {
         async RemoveRoom(root, { id }) {
             Room.deleteOne({ "_id": id });
         },
-        async createRoom(root, {
-            roomInput, userID, chatInput
-        }) {
+        createRoom: (root, {roomInput, userID}, context ) => {
             /*return RoomChat.create(inputRoom).then((value)=>{
                 console.log(value)
             })*/
@@ -263,60 +289,85 @@ module.exports = resolvers = {
                     
                 })
             });*/
-
-            return RoomChat.create(roomInput).then((value) => {
-                console.log(roomInput.room_name)
-                return Room.findOneAndUpdate({ "room_name": roomInput.room_name },
-                    {
-                        $set: {
-                            "member": [userID],
-                            "id_host": userID,
-                            "password": roomInput.password,
-                            "isPrivate": roomInput.isPrivate,
-                            "description": roomInput.description
-                        }
-                    }, { upsert: true, 'new': true }).then(async (f) => {
-                        console.log("Room find one update: " + f._id);
-                        return RoomChat.findOneAndUpdate({ "_id": value._id }, { $set: { "member": [userID], "id_room": f._id } }, { rawResult: true, new: true }).then((doc) => {
-                            console.log(doc);
-                            if (doc.ok) {
-                                return { "id_room": f._id, "result": true }
-                            }
-                            else {
-                                return { "id_room": "", "result": false }
-                            }
-                        })
-
-
+            try {
+                let result = verify(context.token,process.env.SECRET_KEY,{algorithms:"HS512"});
+                if(result.id == userID)
+                {
+                    return RoomChat.create(roomInput).then((value) => {
+                        //console.log(roomInput.game);
+                        return Room.findOneAndUpdate({ "roomName": roomInput.roomName },
+                            {
+                                $set: {
+                                    "member": [userID],
+                                    "idHost": userID,
+                                    "maxOfMember": roomInput.maxMember,
+                                    "game": {
+                                        "id": roomInput.game.id,
+                                        "name": roomInput.game.name
+                                    },
+                                    "isPrivate": roomInput.isPrivate,
+                                    "description": roomInput.description
+                                }
+                            }, { upsert: true, 'new': true }).then(async (f) => {
+                                //console.log("Room find one update: " + f._id);
+                                return RoomChat.findOneAndUpdate({ "_id": value._id },
+                                    { $set: { "member": [userID], "idRoom": f._id } },
+                                    { rawResult: true, new: true }).then((doc) => {
+                                        //console.log(doc);
+                                        if (doc.ok) {
+                                            return { "id_room": f._id, "result": true }
+                                        }
+                                        else {
+                                            return { "id_room": "", "result": false }
+                                        }
+                                    })
+        
+        
+                            }).catch(err => {
+                                return { err, "result": false }
+                            })
                     }).catch(err => {
                         return { err, "result": false }
                     })
-            }).catch(err => {
-                return { err, "result": false }
-            })
+                }
+            } catch (error) {
+                return new AuthenticationError("Wrong token");
+            }
+            
 
         },
-        async RemoveRoom(root, { id }) {
-            return Room.remove({ "_id": id }).then(result => {
+        async RemoveRoom(root, { idRoom ,userID},context) {
+            try {
+                let result = verify(context.token,process.env.SECRET_KEY,{algorithms:"HS512"});
+                if(result.id == userID){
+                    return Room.deleteOne({ "_id": idRoom }).then(result => {
 
-                if (result.deletedCount > 0) {
-                    return { "statusCode": "200", "result": true }
+                        if (result.deletedCount > 0) {
+                            return { "statusCode": "200", "result": true }
+                        }
+                        else {
+                            return { "statusCode": "400", "result": false }
+                        }
+        
+                    }).catch(err => {
+                        return { "statusCode": "400", "result": false }
+                    });
                 }
-                else {
-                    return { "statusCode": "400", "result": false }
-                }
-
-            }).catch(err => {
-                return { "statusCode": "400", "result": false }
-            });
-
+            } catch (error) {
+                return new AuthenticationError("Wrong token");
+            }
         },
-
+        // show ra nhung phong host ma co thanh vien cho 
+        approveList_Host: (root,{hostID},context)=>{
+            return ApporoveList.find();
+        },
+        // show ra nhung phong user dang cho duoc duyet 
+        approveList_User: (root,{userID},context)=>{
+            
+        },
         async onJoinRoom(root, { id_room, id_user }) {
             console.log(id_room)
-
             return Room.findByIdAndUpdate({ "_id": id_room }, { $push: { "member": [id_user] } }, {
-
                 runValidators: true,
                 setDefaultsOnInsert: true,
                 rawResult: true,
@@ -328,7 +379,7 @@ module.exports = resolvers = {
                     return { "code": "400", "success": false, message: "Something wrong" }
                 }
             })
-            UploadImage
+
         },
         async onChatGlobal({ name, input }) {
             GlobalRoom.findOneAndUpdate({ room_name: name }, { $push: { message: input } }, { upsert: true, rawResult: true }, (err, doc) => {
@@ -336,52 +387,52 @@ module.exports = resolvers = {
             })
         },
         // id_user: id from host message, id_friends
-        async onChatPrivate(root,{id_user,id_friend,input}){
+        async onChatPrivate(root, { id_user, id_friend, input }) {
             //default 2 id is a friends ...
 
-            return ChatPrivate.create(input).then(async (value)=>{
-               // console.log(value._id);
-                return await ChatPrivate.findByIdAndUpdate(value._id, {$set:{  "id_user": id_user,"incommingMessage.$[].id_friend": id_friend }}, { upsert: true, 'new': true });  
-               
+            return ChatPrivate.create(input).then(async (value) => {
+                // console.log(value._id);
+                return await ChatPrivate.findByIdAndUpdate(value._id, { $set: { "id_user": id_user, "incommingMessage.$[].id_friend": id_friend } }, { upsert: true, 'new': true });
+
             })
-           
+
         },
         async createChatGlobal(root, { input }) {
             return await GlobalRoom.create(input);
         },
-        
+
         async upload(root, { file, userID, type }) {
 
             // console.log(userID);
-           return (processUpload(file,userID));
+            return (processUpload(file, userID));
 
         },
 
 
     },
-    
+
 }
-const processUpload = async (file,userID)=>{
+const processUpload = async (file, userID) => {
     const { filename, mimetype, createReadStream } = await file;
     var stream = createReadStream();
     let resultUrl = '';
-    const  cloudinaryUpload= async ({stream})=>{
+    const cloudinaryUpload = async ({ stream }) => {
         try {
-            await new Promise((resolve,reject)=>{
-                const streamUpload= cloudinary.uploader.upload_stream(
+            await new Promise((resolve, reject) => {
+                const streamUpload = cloudinary.uploader.upload_stream(
                     {
                         tags: "avatar",
                         folder: "avatar/" + userID,
                     },
-                    (err,result)=>{
-                    if(result){
-                        resultUrl= result.url;
-                        resolve(resultUrl);
-                    }
-                    else {
-                        reject(error);
-                    }
-                });
+                    (err, result) => {
+                        if (result) {
+                            resultUrl = result.url;
+                            resolve(resultUrl);
+                        }
+                        else {
+                            reject(error);
+                        }
+                    });
                 stream.pipe(streamUpload);
             })
         } catch (error) {
@@ -389,8 +440,7 @@ const processUpload = async (file,userID)=>{
 
         }
     }
-    await cloudinaryUpload({stream});
-    return  { "code": "200", "success": true, message: "Upload success", "image_url": resultUrl };
+    await cloudinaryUpload({ stream });
+    return { "code": "200", "success": true, message: "Upload success", "image_url": resultUrl };
 }
 
-           

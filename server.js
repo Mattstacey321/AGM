@@ -1,5 +1,7 @@
-const { ApolloServer } = require('apollo-server');
+const { ApolloServer,AuthenticationError } = require('apollo-server');
+const {verify} =  require('jsonwebtoken');
 const express = require('express');
+const Login= require('./controller/login');
 const mongoose = require('mongoose');
 const Schema = require('./schema');
 const app = express();
@@ -15,14 +17,31 @@ const server = new ApolloServer({
     schema: Schema,
     playground: false,
     introspection: true,
+    cacheControl:{defaultMaxAge:10},
     context:({req})=>{
        const token =req.headers.token || null;
-       console.log(token);
-      return {token};
+       
+       
+       return {token};
+       //console.log(process.env.SECRET_KEY);
+       /*if(!token){
+            throw new AuthenticationError('No token provided !');
+           
+       }
+       else{
+        try {
+            let result= verify(token,process.env.SECRET_KEY);
+            //check id_user == result.id_user
+            if(result) return {token};
+           } catch (error) {
+            throw new AuthenticationError("There is problem with your Token, please check again ... ")
+           }
+       }*/
 
     }
     
 });
+
 server.listen().then(({ url }) => {
    
     console.log(`🚀  Server ready at ${url}`);
