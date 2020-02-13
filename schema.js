@@ -12,23 +12,29 @@ const typeDefs = gql`
         allMessage:[ListMessage]
         getAllRoom:[Room]
         getAllUser:[User]
-        allGlobalRoom(qty:Int,name:String):[GlobalMessage]
+        GlobalRoom(qty:Int,name:String):[GlobalMessage]
         RmvMbFrRoom(type:String!,idUser:String,idRoom:String):Result
-        EditRoom(idRoom:ID!,newData:RoomInput):Result
-        ChangeHost(oldHost:String!,newHost:String!):[Room]
+        editRoom(idRoom:ID!,newData:RoomInput):Result
+        changeHost(oldHost:String!,newHost:String!):[Room]
         getRoomByUser(idUser:String,name:String):[Room]
         getAllRoomChat:[RoomChat]
         getRoomJoin(UserID:String):[Room]
-        onJoinRoomChat(id_room:String,id_user:String):JoinRoomResult
+        joinRoomChat(roomID:String,userID:String,Info:Info):JoinRoomResult
         addMember(id_room:String!,id_user:String!):Result
-        onChatGroup(id_room:String!,chat_message:MessageInput):Result
+        chatGroup(id_room:String!,chat_message:MessageInput):Result
         getAllMessage(id_room:String!):RoomChat
         findRoomByName(room_name:String!):[Room]
         getListGame(limit:Int!):[Game]
         getRandomGame:[Game]
         getGameByGenre(type:String!):[Game]
+        approveList_Host(hostID:String!):[ApproveList]
+        approveList_User(userID:String!):[ApproveList]
        
         
+    }
+    input Info{
+        userID:String!,
+        roomID:String!
     }
     type File {
         filename: String!
@@ -44,6 +50,7 @@ const typeDefs = gql`
         _id:ID!
         roomName:String!
         idUser:String!
+        hostID:String
         isPrivate:Boolean
         description:String
         game:gameInfo
@@ -136,8 +143,8 @@ const typeDefs = gql`
     }
     
     type JoinRoomResult{
-        data:RoomChat
-        statusCode:String
+        message:String
+        status:String
         result:Boolean
     }
     type RoomChat{
@@ -198,7 +205,7 @@ const typeDefs = gql`
         
         roomName:String!
         isPrivate:Boolean!
-        idUser:String!
+        hostID:String!
         description:String
         member:[String]!
         maxMember:Int!
@@ -249,19 +256,19 @@ const typeDefs = gql`
         logo:String
         image:[String]
     }
+     
     type Mutation{
         createGame(input:GameInput):Game
         createRoomChat(input:RoomChatInput):RoomChat
         createRoom(userID:String,roomInput: RoomInput):CreateResult
-        RemoveRoom(idRoom:ID!,userID:String!):ResultCRUD
-        approveList_Host(hostID:String!):[ApproveList]
-        approveList_User(userID:String!):[ApproveList]
+        removeRoom(idRoom:ID!,userID:String!):ResultCRUD
+        
         createUser(input:UserInput):User
-        onChatGlobal(which_game:String!,input: MessageGlobalInput):GlobalMessage
-        onChat(input:newMessage):ListMessage
-        onChatPrivate(id_user:String,id_friend:String,input:message):PrivateMessage
-        onChatUpdate(name:String!,input:MessageInput):ListMessage
-        onJoinRoom(id_room:String!,id_user:String):JoinRoomResponse
+        chatGlobal(which_game:String!,input: MessageGlobalInput):GlobalMessage
+        chat(input:newMessage):ListMessage
+        chatPrivate(id_user:String,id_friend:String,input:message):PrivateMessage
+        chatUpdate(name:String!,input:MessageInput):ListMessage
+        joinRoom(roomID:String!,currentUserID:String!,info:Info!):JoinRoomResult
         createChatGlobal(input:MessageGlobalInput ):GlobalMessage
         upload(file: Upload!,userID:String,type:Int):UploadImage
         
@@ -271,6 +278,7 @@ const typeDefs = gql`
 
 
 const schema = makeExecutableSchema({
+
     typeDefs: typeDefs,
     resolvers:
         Resolvers,

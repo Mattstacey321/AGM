@@ -1,14 +1,14 @@
 const mongoose= require('mongoose');
 const ChatPrivate= mongoose.Schema({
-    id_user:String,
+    userID:String,
     pendingMessage:[{
-        id_user:String,
+        userID:String,
         messages:[String],
         time:String
     }],
     incommingMessage:[
         {
-            id_friend:String,
+            friendID:String,
             message:[String],
             time:String
         }

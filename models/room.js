@@ -11,7 +11,7 @@ const Room = mongoose.Schema({
   },
   description: String,
   maxOfMember: Number,
-  idHost: String,
+  hostID: String,
   member: [String],
   blacklist: [String]
 

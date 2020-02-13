@@ -79,7 +79,7 @@ module.exports = resolvers = {
         async getAllUser() {
             return User.find();
         },
-        async allGlobalRoom(root, { qty, name }) {
+        async GlobalRoom(root, { qty, name }) {
 
             if (qty == 0 || null) {
                 return await GlobalRoom.find();
@@ -114,7 +114,7 @@ module.exports = resolvers = {
             }
 
         },
-        async EditRoom(root, { idRoom, newData }) {
+        async editRoom(root, { idRoom, newData }) {
             return Room.findOneAndUpdate(
                 { "_id": idRoom },
                 {
@@ -131,7 +131,7 @@ module.exports = resolvers = {
                     return { err, "result": false }
                 })
         },
-        async ChangeHost(root, { oldHost, newHost }) {
+        async changeHost(root, { oldHost, newHost }) {
 
 
         },
@@ -148,7 +148,7 @@ module.exports = resolvers = {
             return Room.find(
                 { "member": UserID })
         },
-        async onJoinRoomChat(root, { id_room, id_user }) {
+        async joinRoomChat(root, { id_room, id_user }) {
             return User.findById(id_user).then(async v => {
                 return RoomChat.findOneAndUpdate({ "id_room": id_room }, { $push: { member: v } }, { upsert: true, new: true }).then(value => {
                     console.log(value)
@@ -203,7 +203,7 @@ module.exports = resolvers = {
 
         },
         //them tin nhan vao group chat 
-        async onChatGroup(root, { id_room, chat_message }) {
+        async chatGroup(root, { id_room, chat_message }) {
 
             return RoomChat.findOneAndUpdate({ "id_room": id_room }, { $push: { messages: chat_message } }).then(v => {
                 return v;
@@ -251,30 +251,33 @@ module.exports = resolvers = {
                 //console.log(v);
                 return v;
             })
-        }
+        },
+        // show ra nhung phong host ma co thanh vien cho 
+        approveList_Host: async (root,{hostID},context)=>{
+            return ApporoveList.aggregate([{$match:{"hostID":hostID}}]).then((v)=>{
+                return v;
+            });
+
+        },
+        // show ra nhung phong user dang cho duoc duyet 
+        approveList_User: async (root,{userID},context)=>{
+            return ApporoveList.aggregate([{$match:{"userID":userID}}]).then((v)=>{
+                return v;
+            })
+        },
     },
     Mutation: {
 
-        /* async createRoom(root,{
-             input,username
-         }){
-             Room.create(input);
-             
-             User.findOne({"username":username},async (err,res)=>{
-                 await Room.findOneAndUpdate({"room_name":input.room_name},{$push:{"member":res}},{upsert:true});
-             });
-         },*/
-        
         async createGame(root, { input }) {
             return ListGame.create(input).then((value) => {
                 return value;
             });
         }
         ,
-        async RemoveRoom(root, { id }) {
+        async removeRoom(root, { id }) {
             Room.deleteOne({ "_id": id });
         },
-        createRoom: (root, {roomInput, userID}, context ) => {
+        createRoom: async (root, {roomInput, userID}, context ) => {
             /*return RoomChat.create(inputRoom).then((value)=>{
                 console.log(value)
             })*/
@@ -299,7 +302,7 @@ module.exports = resolvers = {
                             {
                                 $set: {
                                     "member": [userID],
-                                    "idHost": userID,
+                                    "hostID": userID,
                                     "maxOfMember": roomInput.maxMember,
                                     "game": {
                                         "id": roomInput.game.id,
@@ -336,7 +339,7 @@ module.exports = resolvers = {
             
 
         },
-        async RemoveRoom(root, { idRoom ,userID},context) {
+        async removeRoom(root, { idRoom ,userID},context) {
             try {
                 let result = verify(context.token,process.env.SECRET_KEY,{algorithms:"HS512"});
                 if(result.id == userID){
@@ -357,17 +360,56 @@ module.exports = resolvers = {
                 return new AuthenticationError("Wrong token");
             }
         },
-        // show ra nhung phong host ma co thanh vien cho 
-        approveList_Host: (root,{hostID},context)=>{
-            return ApporoveList.find();
-        },
-        // show ra nhung phong user dang cho duoc duyet 
-        approveList_User: (root,{userID},context)=>{
+        
+        /**
+         * 
+         * @param {userID} "user join room" 
+         * @param {roomID} "room user join" 
+         * @param {Info} "info need for approve list"
+         */
+        async joinRoom(root, { roomID, currentUserID, info}) {
+            //check userID is not host
             
-        },
-        async onJoinRoom(root, { id_room, id_user }) {
-            console.log(id_room)
-            return Room.findByIdAndUpdate({ "_id": id_room }, { $push: { "member": [id_user] } }, {
+            return Room.aggregate([{ $match: { "roomID":roomID,"hostID": currentUserID}, }]).then((v)=>{
+                console.log(v.length);
+                
+                if(v.length<1){
+                    return ApporoveList.find({"roomID":roomID}).then((v)=>{
+                        console.log(v.length);
+                        
+                        if(v.length>0){
+                            return {
+                                "message":"You has been joined room, choose another room",
+                                "status":401,
+                                "result":false
+                            }
+                        }
+                        
+                        else return ApporoveList.create(info).then((v)=>{
+                        
+                            return {
+                                "message":"Waiting for apporove",
+                                "status":400,
+                                "result":true
+                            };;
+                              
+                        })
+                    })
+                   
+                }
+                else{
+                    return {
+                        "message":"You are host",
+                        "status":401,
+                        "result":false
+                    };
+                }
+                
+            })
+
+            //return ApporoveList.create()
+            
+            /*return Room.findByIdAndUpdate({ "_id": id_room }, { $push: { "member": [id_user] } }, {
                 runValidators: true,
                 setDefaultsOnInsert: true,
                 rawResult: true,
@@ -378,16 +420,16 @@ module.exports = resolvers = {
                 else {
                     return { "code": "400", "success": false, message: "Something wrong" }
                 }
-            })
+            })*/
 
         },
-        async onChatGlobal({ name, input }) {
+        async chatGlobal({ name, input }) {
             GlobalRoom.findOneAndUpdate({ room_name: name }, { $push: { message: input } }, { upsert: true, rawResult: true }, (err, doc) => {
                 console.log(doc.ok);
             })
         },
         // id_user: id from host message, id_friends
-        async onChatPrivate(root, { id_user, id_friend, input }) {
+        async chatPrivate(root, { id_user, id_friend, input }) {
             //default 2 id is a friends ...
 
             return ChatPrivate.create(input).then(async (value) => {
