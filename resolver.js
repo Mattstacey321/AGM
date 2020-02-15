@@ -67,14 +67,18 @@ module.exports = resolvers = {
 
             return await Message.find();
         },
-
-        async getAllRoom(_, { }, { token }) {
+        async getAllRoom(_, {page,limit}, { token }) {
             // if (!token) {
             //     console.log("No access token provided !")
             //     throw new AuthenticationError("No access token provided !")
             // }
             // else 
-            return Room.find();
+
+            return Room.paginate({},{ page: page,limit: limit,}).then((v)=>{
+                return v.docs;
+            }).catch((e)=>{
+                return null;
+            })
         },
         async getAllRoomChat() {
             return await RoomChat.find();

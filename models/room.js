@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 const Room = mongoose.Schema({
   roomName: String,
   isPrivate: {
@@ -22,5 +23,5 @@ const Room = mongoose.Schema({
     default:Date.now()
   }
 })
-
+Room.plugin(mongoosePaginate);
 module.exports = mongoose.model('roomList', Room);

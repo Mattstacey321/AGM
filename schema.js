@@ -11,7 +11,7 @@ const typeDefs = gql`
         generateToken(id:String!):String
         test:[ResultTest]
         allMessage:[ListMessage]
-        getAllRoom:[Room]
+        getAllRoom(page:Int,limit:Int):[Room]
         RmvMbFrRoom(type:String!,idUser:String,idRoom:String):Result
         editRoom(idRoom:ID!,newData:RoomInput):Result
         changeHost(oldHost:String!,newHost:String!):[Room]
@@ -182,8 +182,8 @@ const typeDefs = gql`
     }
    
     input GameInfo{
-        id:String!
-        name:String!
+        gameID:String!
+        gameName:String!
     }
    
     input MessageInput{
