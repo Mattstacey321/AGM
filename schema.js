@@ -177,7 +177,7 @@ const typeDefs = gql`
         hostID:String!
         description:String
         member:[String]!
-        maxMember:Int!
+        maxOfMember:Int!
         game:GameInfo
     }
    
