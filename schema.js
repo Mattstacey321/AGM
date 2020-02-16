@@ -79,7 +79,11 @@ const typeDefs = gql`
             (WIP)
         """
         approveList_User(userID:String!):[ApproveList]
-       
+        """
+            *** get room by game, specify gameID to find
+            ***
+        """
+        getRoomByGame(gameID:String!):[Room]
         
     }
     interface Message{

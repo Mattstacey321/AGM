@@ -230,6 +230,9 @@ module.exports = resolvers = {
                 return v;
             })
         },
+        getRoomByGame: async (root,{gameID})=>{
+            return Room.aggregate([{$match:{"game.gameID":gameID}}]);
+        }
     },
     Mutation: {
 
